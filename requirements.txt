@@ -1,0 +1,6 @@
+scipy
+pandas
+pyscf
+pyqmc
+statsmodels
+
