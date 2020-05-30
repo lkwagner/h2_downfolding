@@ -5,7 +5,7 @@ import pyscf.mcscf
 import numpy as np
 import h5py 
 
-def hf_casci(txt, chkfile='hf.chk', casfile='cas.chk', nelecas=(1,1), ncas = 2, nroots =3):
+def hf_casci(txt, chkfile='hf.chk', casfile='cas.chk', nelecas=(1,1), ncas = 2, nroots =4):
     mol = pyscf.gto.Mole(atom = txt, basis = 'cc-pvdz', unit='bohr')
     mol.build()
     mf = pyscf.scf.RHF(mol)
@@ -51,7 +51,7 @@ def gen_wf(chkfile, casfile, root_weights):
     }
 
 def restart_wf(chkfile, casfile, wf_file):
-    mc_calc = gen_wf(chkfile, casfile, 0)
+    mc_calc = gen_wf(chkfile, casfile, {0:1.})
     with h5py.File(wf_file, "r") as hdf:
         if "wf" in hdf.keys():
             grp = hdf["wf"]
@@ -59,10 +59,10 @@ def restart_wf(chkfile, casfile, wf_file):
                 mc_calc['wf'].parameters[k] = np.array(grp[k])
     return mc_calc
 
-def linear(mc_calc,  hdf_file,nconfig=1000):
+def linear(mc_calc,nconfig=1000,**kwargs):
     configs = pyqmc.initial_guess(mc_calc['mol'], nconfig)
     acc = pyqmc.gradient_generator(mc_calc['mol'], mc_calc['wf'], to_opt=mc_calc['to_opt'], freeze=mc_calc['freeze'])
-    pyqmc.line_minimization(mc_calc['wf'], configs, acc, verbose = True, hdf_file = hdf_file)
+    pyqmc.line_minimization(mc_calc['wf'], configs, acc,  **kwargs)
 
 
 def optimize_excited(mc_anchors, mc_calc, nconfig = 1000, **kwargs):
