@@ -1,6 +1,5 @@
 import sample_le
 import numpy as np
-samples = range(0,10)
 
 ortho_kws = {'tstep':0.5,
 'nsteps':20,
@@ -9,7 +8,8 @@ ortho_kws = {'tstep':0.5,
 linear_kws = {'nconfig':500 } 
 
 rule all:
-    input: "vmc_tbdm_excited_3.0.0.chk",expand("vmc_tbdm_sample_{number}.chk",number=samples)
+    input: expand("vmc_tbdm_eigenstate{n}.chk",n=[0,1,2,3]),
+           expand("vmc_tbdm_sample_{number}.chk",number=range(0,30))
 
 rule MF_CASCI:
     input: "geometry.xyz"
@@ -22,42 +22,42 @@ rule MF_CASCI:
 
 rule LINEAR: 
     input: hf="hf.chk",casci="casci.chk"
-    output: 'linear.chk'
+    output: 'eigenstate0.chk'
     run: 
         mc_calc = sample_le.gen_wf(input.hf,input.casci, {0:1.0})
         sample_le.linear(mc_calc, hdf_file=output[0], verbose=True, **linear_kws)
 
-rule EXCITED:
-    input: hf="hf.chk",casci="casci.chk",anchor='linear.chk'
-    output: "excited.{proportion}.chk"
+rule EXCITED1:
+    input: hf="hf.chk",casci="casci.chk",anchor="eigenstate0.chk"
+    output: "eigenstate1.chk"
     run:
-        mc_ex = sample_le.gen_wf(input.hf,input.casci,{0:float(wildcards.proportion), 1:1-float(wildcards.proportion)})
+        mc_ex = sample_le.gen_wf(input.hf,input.casci,{0:0.0,1:1.0})
         mc_ref = sample_le.restart_wf(input.hf, input.casci, input.anchor)
-        sample_le.optimize_excited([mc_ref],mc_ex,Starget=[float(wildcards.proportion)],forcing=[2.0],hdf_file=output[0],**ortho_kws)
+        sample_le.optimize_excited([mc_ref],mc_ex,Starget=[0.0],forcing=[2.0],hdf_file=output[0],**ortho_kws)
 
 rule EXCITED2:
-    input: hf="hf.chk",casci="casci.chk",anchor1='linear.chk', anchor2='excited.0.0.chk'
-    output: "excited_2.{proportion}.chk"
+    input: hf="hf.chk",casci="casci.chk",anchor1="eigenstate0.chk",anchor2="eigenstate1.chk"
+    output: "eigenstate2.chk"
     run:
-        mc_ex = sample_le.gen_wf(input.hf,input.casci,{0:float(wildcards.proportion), 1:0, 2:1-float(wildcards.proportion)})
+        mc_ex = sample_le.gen_wf(input.hf,input.casci,{0:0., 1:0, 2:1.})
         mc_ref = sample_le.restart_wf(input.hf, input.casci, input.anchor1)
         mc_ref2 = sample_le.restart_wf(input.hf, input.casci, input.anchor2)
-        sample_le.optimize_excited([mc_ref,mc_ref2],mc_ex,Starget=[float(wildcards.proportion),0.0],forcing=[2.0,2.0],hdf_file=output[0],**ortho_kws)
+        sample_le.optimize_excited([mc_ref,mc_ref2],mc_ex,Starget=[0.0,0.0],forcing=[2.0,2.0],hdf_file=output[0],**ortho_kws)
 
 
 rule EXCITED3:
-    input: hf="hf.chk",casci="casci.chk",anchor1='linear.chk', anchor2='excited.0.0.chk', anchor3='excited_2.0.0.chk'
-    output: "excited_3.{proportion}.chk"
+    input: hf="hf.chk",casci="casci.chk",anchor1="eigenstate0.chk", anchor2="eigenstate1.chk", anchor3="eigenstate2.chk"
+    output: "eigenstate3.chk"
     run:
-        mc_ex = sample_le.gen_wf(input.hf,input.casci,{0:float(wildcards.proportion), 1:0.0, 2:0.0, 3:1-float(wildcards.proportion)})
+        mc_ex = sample_le.gen_wf(input.hf,input.casci,{0:0, 1:0.0, 2:0.0, 3:1.0})
         mc_ref = sample_le.restart_wf(input.hf, input.casci, input.anchor1)
         mc_ref2 = sample_le.restart_wf(input.hf, input.casci, input.anchor2)
         mc_ref3 = sample_le.restart_wf(input.hf, input.casci, input.anchor3)
-        sample_le.optimize_excited([mc_ref,mc_ref2,mc_ref3],mc_ex,Starget=[float(wildcards.proportion),0.0,0.0],forcing=[2.0,2.0,2.0],hdf_file=output[0], **ortho_kws)
+        sample_le.optimize_excited([mc_ref,mc_ref2,mc_ref3],mc_ex,Starget=[0.0,0.0,0.0],forcing=[2.0,2.0,2.0],hdf_file=output[0], **ortho_kws)
 
 
 rule RANDOM_SUPERPOSITION:
-    input: hf="hf.chk",casci="casci.chk",anchor1='linear.chk', anchor2='excited.0.0.chk', anchor3='excited_2.0.0.chk'
+    input: hf="hf.chk",casci="casci.chk",anchor1="eigenstate0.chk", anchor2="eigenstate1.chk", anchor3="eigenstate2.chk"
     output: "sample_{samplenumber}.chk"
     run:
         props = np.random.rand(4)
