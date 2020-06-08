@@ -3,4 +3,4 @@ pandas
 pyscf
 pyqmc
 statsmodels
-snakemake
+

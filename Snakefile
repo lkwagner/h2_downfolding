@@ -67,7 +67,7 @@ rule RANDOM_SUPERPOSITION:
     input: hf="r{bond}/hf.chk",casci="r{bond}/casci.chk",anchor1="r{bond}/eigenstate0.chk", anchor2="r{bond}/eigenstate1.chk", anchor3="r{bond}/eigenstate2.chk"
     output: "r{bond}/sample_{samplenumber}.chk"
     run:
-        props = np.random.rand(4)
+        props = np.random.randn(4)
         props = props/np.linalg.norm(props)
         mc_ex = sample_le.gen_wf(input.hf,input.casci,{0:props[0], 1:props[1], 2:props[2], 3:props[3]})
         mc_ref = sample_le.restart_wf(input.hf, input.casci, input.anchor1)
